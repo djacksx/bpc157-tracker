@@ -1,0 +1,773 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black" />
+  <meta name="apple-mobile-web-app-title" content="BPC-157" />
+  <meta name="theme-color" content="#000000" />
+  <link rel="manifest" href="manifest.json" />
+  <title>BPC-157 Journal</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+
+    :root {
+      --bg: #000;
+      --surface: #111;
+      --border: #222;
+      --border-light: #1a1a1a;
+      --text: #fff;
+      --text-muted: #666;
+      --text-dim: #333;
+      --accent: #fff;
+      --safe-top: env(safe-area-inset-top, 0px);
+      --safe-bottom: env(safe-area-inset-bottom, 0px);
+    }
+
+    html, body {
+      height: 100%;
+      background: var(--bg);
+      color: var(--text);
+      font-family: -apple-system, 'Helvetica Neue', Arial, sans-serif;
+      font-size: 15px;
+      line-height: 1.4;
+      overflow: hidden;
+    }
+
+    #app {
+      display: flex;
+      flex-direction: column;
+      height: 100dvh;
+      max-width: 480px;
+      margin: 0 auto;
+    }
+
+    /* HEADER */
+    .header {
+      padding: calc(var(--safe-top) + 16px) 20px 14px;
+      border-bottom: 1px solid var(--border);
+      flex-shrink: 0;
+    }
+    .header-top {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+    }
+    .header h1 {
+      font-size: 20px;
+      font-weight: 600;
+      letter-spacing: -0.3px;
+    }
+    .header-sub {
+      font-size: 12px;
+      color: var(--text-muted);
+      margin-top: 2px;
+    }
+    .dose-pill {
+      font-size: 11px;
+      color: var(--text-muted);
+      border: 1px solid var(--border);
+      border-radius: 20px;
+      padding: 4px 10px;
+      white-space: nowrap;
+    }
+
+    /* NAV */
+    .nav {
+      display: flex;
+      border-bottom: 1px solid var(--border);
+      flex-shrink: 0;
+    }
+    .nav-btn {
+      flex: 1;
+      padding: 12px 4px;
+      background: none;
+      border: none;
+      border-bottom: 2px solid transparent;
+      color: var(--text-muted);
+      font-size: 11px;
+      letter-spacing: 1.5px;
+      text-transform: uppercase;
+      cursor: pointer;
+      font-family: inherit;
+      transition: color 0.15s;
+    }
+    .nav-btn.active {
+      color: var(--text);
+      border-bottom-color: var(--text);
+    }
+
+    /* SCROLL AREA */
+    .scroll {
+      flex: 1;
+      overflow-y: auto;
+      -webkit-overflow-scrolling: touch;
+      padding: 20px 20px calc(var(--safe-bottom) + 20px);
+    }
+
+    /* LABEL */
+    .label {
+      font-size: 10px;
+      letter-spacing: 2px;
+      text-transform: uppercase;
+      color: var(--text-muted);
+      margin-bottom: 8px;
+      display: block;
+    }
+
+    /* DATE INPUT */
+    .date-input {
+      width: 100%;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      color: var(--text);
+      padding: 11px 14px;
+      font-size: 14px;
+      font-family: inherit;
+      margin-bottom: 20px;
+    }
+    .date-input:focus { outline: none; border-color: #444; }
+
+    /* DOSE TOGGLE */
+    .dose-toggle {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 13px 16px;
+      cursor: pointer;
+      margin-bottom: 20px;
+      transition: border-color 0.15s;
+    }
+    .dose-toggle.active { border-color: #444; }
+    .dose-toggle-label { font-size: 14px; }
+    .check-circle {
+      width: 22px; height: 22px;
+      border-radius: 50%;
+      border: 1.5px solid var(--border);
+      display: flex; align-items: center; justify-content: center;
+      font-size: 11px;
+      transition: all 0.15s;
+      flex-shrink: 0;
+    }
+    .check-circle.checked {
+      background: var(--text);
+      border-color: var(--text);
+      color: var(--bg);
+    }
+
+    /* METRIC ROW */
+    .metric-row {
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      margin-bottom: 6px;
+      overflow: hidden;
+    }
+    .metric-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 12px 14px;
+      cursor: pointer;
+    }
+    .metric-left {
+      display: flex; align-items: center; gap: 10px;
+    }
+    .metric-icon { font-size: 17px; line-height: 1; }
+    .metric-name { font-size: 14px; }
+    .metric-right {
+      display: flex; align-items: center; gap: 8px;
+    }
+    .metric-badge {
+      font-size: 11px;
+      color: var(--text-muted);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 2px 8px;
+    }
+    .metric-badge.set {
+      color: var(--text);
+      border-color: #444;
+    }
+    .chevron {
+      font-size: 9px;
+      color: var(--text-dim);
+      transition: transform 0.15s;
+    }
+    .chevron.open { transform: rotate(180deg); }
+
+    /* SCORE PICKER */
+    .score-picker {
+      padding: 4px 14px 14px;
+      border-top: 1px solid var(--border-light);
+    }
+    .score-grid {
+      display: grid;
+      grid-template-columns: repeat(10, 1fr);
+      gap: 4px;
+    }
+    .score-btn {
+      aspect-ratio: 1;
+      border-radius: 6px;
+      border: 1px solid var(--border);
+      background: transparent;
+      color: var(--text-muted);
+      font-size: 13px;
+      cursor: pointer;
+      font-family: inherit;
+      transition: all 0.1s;
+      display: flex; align-items: center; justify-content: center;
+    }
+    .score-btn.selected {
+      background: var(--text);
+      border-color: var(--text);
+      color: var(--bg);
+      font-weight: 600;
+    }
+    .score-hint {
+      margin-top: 8px;
+      font-size: 10px;
+      color: var(--text-dim);
+      letter-spacing: 0.3px;
+    }
+
+    /* NOTES */
+    .notes-area {
+      width: 100%;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      color: var(--text);
+      padding: 12px 14px;
+      font-size: 14px;
+      resize: none;
+      font-family: inherit;
+      line-height: 1.5;
+      margin-bottom: 20px;
+    }
+    .notes-area:focus { outline: none; border-color: #444; }
+    .notes-area::placeholder { color: var(--text-dim); }
+
+    /* SAVE BUTTON */
+    .save-btn {
+      width: 100%;
+      padding: 15px;
+      background: var(--text);
+      border: none;
+      border-radius: 8px;
+      color: var(--bg);
+      font-size: 13px;
+      letter-spacing: 2px;
+      text-transform: uppercase;
+      cursor: pointer;
+      font-family: inherit;
+      font-weight: 600;
+      transition: opacity 0.15s;
+    }
+    .save-btn:active { opacity: 0.7; }
+    .save-btn.saved {
+      background: transparent;
+      border: 1px solid var(--border);
+      color: var(--text-muted);
+    }
+
+    /* HISTORY */
+    .history-meta {
+      font-size: 11px;
+      color: var(--text-muted);
+      letter-spacing: 1px;
+      text-transform: uppercase;
+      margin-bottom: 16px;
+    }
+    .history-card {
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 14px 16px;
+      margin-bottom: 8px;
+      cursor: pointer;
+      transition: border-color 0.15s;
+    }
+    .history-card:active { border-color: #444; }
+    .history-card-top {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+    }
+    .history-date { font-size: 14px; font-weight: 500; }
+    .history-meta-row {
+      font-size: 11px;
+      color: var(--text-muted);
+      margin-top: 3px;
+    }
+    .avg-score {
+      text-align: right;
+    }
+    .avg-num { font-size: 20px; font-weight: 300; }
+    .avg-label { font-size: 9px; color: var(--text-muted); letter-spacing: 1px; text-transform: uppercase; }
+    .history-note {
+      margin-top: 10px;
+      font-size: 12px;
+      color: var(--text-muted);
+      border-top: 1px solid var(--border-light);
+      padding-top: 8px;
+      font-style: italic;
+    }
+    .empty-state {
+      text-align: center;
+      padding: 60px 0;
+      color: var(--text-dim);
+      font-size: 14px;
+      line-height: 2;
+    }
+
+    /* PROGRESS */
+    .progress-metric {
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 14px 16px;
+      margin-bottom: 10px;
+    }
+    .progress-metric-top {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 12px;
+    }
+    .progress-metric-name {
+      display: flex; align-items: center; gap: 8px;
+      font-size: 13px;
+    }
+    .delta {
+      font-size: 12px;
+      font-weight: 500;
+    }
+    .delta.up { color: #fff; }
+    .delta.down { color: var(--text-muted); }
+    .bar-chart {
+      display: flex;
+      align-items: flex-end;
+      gap: 3px;
+      height: 40px;
+      margin-bottom: 4px;
+    }
+    .bar {
+      flex: 1;
+      border-radius: 2px 2px 0 0;
+      min-height: 3px;
+      transition: height 0.3s;
+    }
+    .bar.current { background: #fff; }
+    .bar.past { background: #333; }
+    .bar-labels {
+      display: flex;
+      justify-content: space-between;
+      font-size: 9px;
+      color: var(--text-dim);
+      letter-spacing: 0.5px;
+    }
+
+    /* SUMMARY CARD */
+    .summary-card {
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 16px;
+      margin-top: 10px;
+    }
+    .summary-label {
+      font-size: 10px;
+      letter-spacing: 2px;
+      text-transform: uppercase;
+      color: var(--text-muted);
+      margin-bottom: 14px;
+    }
+    .summary-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 14px;
+    }
+    .summary-num { font-size: 24px; font-weight: 300; }
+    .summary-key { font-size: 10px; color: var(--text-muted); letter-spacing: 0.5px; margin-top: 2px; }
+
+    /* Divider */
+    .section-gap { margin-bottom: 20px; }
+
+    /* Scrollbar */
+    .scroll::-webkit-scrollbar { width: 0; }
+  </style>
+</head>
+<body>
+<div id="app">
+  <div class="header">
+    <div class="header-top">
+      <div>
+        <h1>BPC‑157 Journal</h1>
+        <div class="header-sub" id="header-sub">Loading...</div>
+      </div>
+      <div class="dose-pill">💉 250mcg</div>
+    </div>
+  </div>
+
+  <div class="nav">
+    <button class="nav-btn active" onclick="setView('log')" id="nav-log">Log</button>
+    <button class="nav-btn" onclick="setView('history')" id="nav-history">History</button>
+    <button class="nav-btn" onclick="setView('progress')" id="nav-progress">Progress</button>
+  </div>
+
+  <div class="scroll" id="main-scroll">
+    <!-- Rendered by JS -->
+  </div>
+</div>
+
+<script>
+const METRICS = [
+  { id: "energy",      label: "Energy",        icon: "⚡", inverse: false },
+  { id: "brainFog",    label: "Brain Fog",      icon: "🌫️", inverse: true  },
+  { id: "gutComfort",  label: "Gut Comfort",    icon: "🌿", inverse: false },
+  { id: "dryEye",      label: "Dry Eye",        icon: "👁️", inverse: true  },
+  { id: "dryMouth",    label: "Dry Mouth",      icon: "💧", inverse: true  },
+  { id: "sleep",       label: "Sleep Quality",  icon: "🌙", inverse: false },
+  { id: "inflammation",label: "Inflammation",   icon: "🔥", inverse: true  },
+  { id: "mood",        label: "Mood",           icon: "☀️", inverse: false },
+];
+
+const STORAGE_KEY = "bpc157-entries-v2";
+const START_DATE = "2026-06-09";
+
+let view = "log";
+let entries = {};
+let today = todayStr();
+let selectedDate = today;
+let openMetric = null;
+let currentScores = {};
+let currentNotes = "";
+let currentDose = false;
+let savedFlash = false;
+
+function todayStr() {
+  return new Date().toISOString().split("T")[0];
+}
+
+function formatDate(d) {
+  const dt = new Date(d + "T12:00:00");
+  return dt.toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
+}
+
+function getWeek(dateStr) {
+  const start = new Date(START_DATE + "T12:00:00");
+  const current = new Date(dateStr + "T12:00:00");
+  const diff = Math.floor((current - start) / (7 * 24 * 60 * 60 * 1000));
+  return Math.max(1, diff + 1);
+}
+
+function loadStorage() {
+  try {
+    const s = localStorage.getItem(STORAGE_KEY);
+    if (s) entries = JSON.parse(s);
+  } catch(e) {}
+}
+
+function saveStorage() {
+  try { localStorage.setItem(STORAGE_KEY, JSON.stringify(entries)); } catch(e) {}
+}
+
+function loadEntry(d) {
+  const e = entries[d] || {};
+  currentScores = Object.assign({}, e.scores || {});
+  currentNotes = e.notes || "";
+  currentDose = e.doseLogged || false;
+}
+
+function setView(v) {
+  view = v;
+  ["log","history","progress"].forEach(id => {
+    document.getElementById("nav-" + id).classList.toggle("active", id === v);
+  });
+  openMetric = null;
+  render();
+}
+
+function scoreLabel(id, v) {
+  const inv = ["brainFog","dryEye","dryMouth","inflammation"].includes(id);
+  if (inv) {
+    if (v <= 3) return "Severe";
+    if (v <= 5) return "Moderate";
+    if (v <= 7) return "Mild";
+    return "None";
+  }
+  if (v <= 3) return "Poor";
+  if (v <= 5) return "Fair";
+  if (v <= 7) return "Good";
+  return "Great";
+}
+
+function allDates() {
+  return Object.keys(entries).sort();
+}
+
+function weeklyAverages() {
+  const weekData = {};
+  allDates().forEach(d => {
+    const w = getWeek(d);
+    if (!weekData[w]) weekData[w] = { totals: {}, counts: {} };
+    METRICS.forEach(({ id }) => {
+      const v = entries[d]?.scores?.[id];
+      if (v !== undefined) {
+        weekData[w].totals[id] = (weekData[w].totals[id] || 0) + v;
+        weekData[w].counts[id] = (weekData[w].counts[id] || 0) + 1;
+      }
+    });
+  });
+  return weekData;
+}
+
+// ---- RENDER ----
+
+function render() {
+  const totalDays = allDates().length;
+  const currentWeek = getWeek(today);
+  document.getElementById("header-sub").textContent =
+    `Week ${currentWeek} · ${totalDays} day${totalDays !== 1 ? "s" : ""} logged`;
+
+  const scroll = document.getElementById("main-scroll");
+
+  if (view === "log") scroll.innerHTML = renderLog();
+  else if (view === "history") scroll.innerHTML = renderHistory();
+  else scroll.innerHTML = renderProgress();
+}
+
+function renderLog() {
+  let html = `
+    <span class="label">Date</span>
+    <input class="date-input" type="date" value="${selectedDate}" onchange="changeDate(this.value)" />
+
+    <div class="dose-toggle ${currentDose ? 'active' : ''}" onclick="toggleDose()">
+      <span class="dose-toggle-label">💉 Dose taken today</span>
+      <div class="check-circle ${currentDose ? 'checked' : ''}">${currentDose ? '✓' : ''}</div>
+    </div>
+
+    <span class="label">Symptoms — tap to score</span>
+  `;
+
+  METRICS.forEach(({ id, label, icon }) => {
+    const val = currentScores[id];
+    const isOpen = openMetric === id;
+    const inv = ["brainFog","dryEye","dryMouth","inflammation"].includes(id);
+    html += `
+      <div class="metric-row">
+        <div class="metric-header" onclick="toggleMetric('${id}')">
+          <div class="metric-left">
+            <span class="metric-icon">${icon}</span>
+            <span class="metric-name">${label}</span>
+          </div>
+          <div class="metric-right">
+            ${val !== undefined
+              ? `<span class="metric-badge set">${val}/10 · ${scoreLabel(id, val)}</span>`
+              : `<span class="metric-badge">—</span>`}
+            <span class="chevron ${isOpen ? 'open' : ''}">▼</span>
+          </div>
+        </div>
+        ${isOpen ? `
+          <div class="score-picker">
+            <div class="score-grid">
+              ${[1,2,3,4,5,6,7,8,9,10].map(n => `
+                <button class="score-btn ${val === n ? 'selected' : ''}" onclick="setScore('${id}', ${n})">${n}</button>
+              `).join("")}
+            </div>
+            <div class="score-hint">${inv ? "1 = Severe · 10 = None" : "1 = Poor · 10 = Excellent"}</div>
+          </div>
+        ` : ""}
+      </div>
+    `;
+  });
+
+  html += `
+    <div class="section-gap"></div>
+    <span class="label">Notes</span>
+    <textarea class="notes-area" rows="3" placeholder="Observations, changes, how you feel..."
+      oninput="currentNotes = this.value">${currentNotes}</textarea>
+
+    <button class="save-btn ${savedFlash ? 'saved' : ''}" onclick="saveEntry()">
+      ${savedFlash ? '✓ Saved' : 'Save Entry'}
+    </button>
+  `;
+
+  return html;
+}
+
+function renderHistory() {
+  const dates = [...allDates()].reverse();
+  let html = `<div class="history-meta">${dates.length} entr${dates.length !== 1 ? 'ies' : 'y'}</div>`;
+
+  if (dates.length === 0) {
+    return html + `<div class="empty-state">No entries yet.<br>Start logging today.</div>`;
+  }
+
+  dates.forEach(d => {
+    const entry = entries[d];
+    const scored = METRICS.filter(({ id }) => entry.scores?.[id] !== undefined);
+    const avg = scored.length
+      ? (scored.reduce((s, { id }) => s + entry.scores[id], 0) / scored.length).toFixed(1)
+      : null;
+    html += `
+      <div class="history-card" onclick="editEntry('${d}')">
+        <div class="history-card-top">
+          <div>
+            <div class="history-date">${formatDate(d)}</div>
+            <div class="history-meta-row">Week ${getWeek(d)} · ${scored.length} metrics · ${entry.doseLogged ? '💉 Dose' : 'No dose'}</div>
+          </div>
+          ${avg ? `
+            <div class="avg-score">
+              <div class="avg-num">${avg}</div>
+              <div class="avg-label">avg</div>
+            </div>
+          ` : ""}
+        </div>
+        ${entry.notes ? `<div class="history-note">"${entry.notes.slice(0,80)}${entry.notes.length > 80 ? '...' : ''}"</div>` : ""}
+      </div>
+    `;
+  });
+
+  return html;
+}
+
+function renderProgress() {
+  const weekData = weeklyAverages();
+  const weeks = Object.keys(weekData).map(Number).sort((a,b) => a - b);
+
+  if (weeks.length === 0) {
+    return `<div class="empty-state">Log a few entries<br>to see your trends.</div>`;
+  }
+
+  let html = "";
+
+  METRICS.forEach(({ id, label, icon, inverse }) => {
+    const data = weeks.map(w => {
+      const t = weekData[w]?.totals?.[id] || 0;
+      const c = weekData[w]?.counts?.[id] || 1;
+      return parseFloat((t / c).toFixed(1));
+    });
+
+    const hasData = data.some(v => v > 0);
+    if (!hasData) return;
+
+    const latest = data[data.length - 1];
+    const first = data[0];
+    const delta = (latest - first).toFixed(1);
+    const improved = parseFloat(delta) > 0;
+
+    html += `
+      <div class="progress-metric">
+        <div class="progress-metric-top">
+          <div class="progress-metric-name">
+            <span>${icon}</span>
+            <span>${label}</span>
+          </div>
+          ${data.length > 1
+            ? `<span class="delta ${improved ? 'up' : 'down'}">${improved ? '▲' : '▼'} ${Math.abs(delta)}</span>`
+            : ""}
+        </div>
+        <div class="bar-chart">
+          ${data.map((v, i) => {
+            const h = Math.max(3, Math.round((v / 10) * 40));
+            const isCurrent = i === data.length - 1;
+            return `<div class="bar ${isCurrent ? 'current' : 'past'}" style="height:${h}px"></div>`;
+          }).join("")}
+        </div>
+        <div class="bar-labels">
+          <span>Wk ${weeks[0]}</span>
+          <span>Wk ${weeks[weeks.length - 1]}</span>
+        </div>
+      </div>
+    `;
+  });
+
+  const dates = allDates();
+  const dosed = dates.filter(d => entries[d]?.doseLogged).length;
+  const adherence = dates.length ? Math.round((dosed / dates.length) * 100) : 0;
+
+  html += `
+    <div class="summary-card">
+      <div class="summary-label">Protocol Summary</div>
+      <div class="summary-grid">
+        <div><div class="summary-num">${dates.length}</div><div class="summary-key">Days logged</div></div>
+        <div><div class="summary-num">${weeks.length}</div><div class="summary-key">Weeks active</div></div>
+        <div><div class="summary-num">${adherence}%</div><div class="summary-key">Dose adherence</div></div>
+        <div><div class="summary-num">${Math.max(0, 26 - weeks.length)}</div><div class="summary-key">Weeks remaining</div></div>
+      </div>
+    </div>
+  `;
+
+  return html;
+}
+
+// ---- ACTIONS ----
+
+function changeDate(d) {
+  selectedDate = d;
+  openMetric = null;
+  loadEntry(d);
+  render();
+}
+
+function toggleDose() {
+  currentDose = !currentDose;
+  render();
+}
+
+function toggleMetric(id) {
+  openMetric = openMetric === id ? null : id;
+  render();
+  if (openMetric) {
+    setTimeout(() => {
+      const rows = document.querySelectorAll(".metric-row");
+      for (const r of rows) {
+        if (r.querySelector(".metric-header")?.getAttribute("onclick")?.includes(id)) {
+          r.scrollIntoView({ behavior: "smooth", block: "nearest" });
+          break;
+        }
+      }
+    }, 50);
+  }
+}
+
+function setScore(id, val) {
+  currentScores[id] = val;
+  render();
+}
+
+function saveEntry() {
+  entries[selectedDate] = {
+    date: selectedDate,
+    scores: Object.assign({}, currentScores),
+    notes: currentNotes,
+    doseLogged: currentDose,
+  };
+  saveStorage();
+  savedFlash = true;
+  render();
+  setTimeout(() => { savedFlash = false; render(); }, 2000);
+}
+
+function editEntry(d) {
+  selectedDate = d;
+  loadEntry(d);
+  openMetric = null;
+  setView("log");
+}
+
+// ---- INIT ----
+
+if ('serviceWorker' in navigator) {
+  navigator.serviceWorker.register('./sw.js').catch(() => {});
+}
+
+loadStorage();
+loadEntry(selectedDate);
+render();
+</script>
+</body>
+</html>
