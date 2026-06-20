@@ -542,17 +542,28 @@ function render() {
 
 function renderLog() {
   let html = `
-    <div style="display:flex; gap:10px; align-items:stretch; margin-bottom:20px;">
-      <div style="flex:1;">
-        <span class="label">Date</span>
-        <input class="date-input" type="date" value="${selectedDate}" onchange="changeDate(this.value)" style="margin-bottom:0;" />
-      </div>
-    </div>
-
-    <span class="label">Dose Amount</span>
-    <div style="display:flex; gap:8px; margin-bottom:20px;">
-      <button onclick="setDoseAmount(250)" style="flex:1;padding:11px 8px;border-radius:8px;border:1px solid ${currentDoseAmount===250?'#000':'var(--border)'};background:${currentDoseAmount===250?'#000':'transparent'};color:${currentDoseAmount===250?'#fff':'var(--text-muted)'};font-size:13px;font-family:inherit;cursor:pointer;font-weight:${currentDoseAmount===250?'600':'400'};">250mcg</button>
-      <button onclick="setDoseAmount(500)" style="flex:1;padding:11px 8px;border-radius:8px;border:1px solid ${currentDoseAmount===500?'#000':'var(--border)'};background:${currentDoseAmount===500?'#000':'transparent'};color:${currentDoseAmount===500?'#fff':'var(--text-muted)'};font-size:13px;font-family:inherit;cursor:pointer;font-weight:${currentDoseAmount===500?'600':'400'};">500mcg</button>
+    <span class="label">Date & Dose</span>
+    <div style="display:flex; gap:8px; align-items:stretch; margin-bottom:20px;">
+      <input class="date-input" type="date" value="${selectedDate}" onchange="changeDate(this.value)"
+        style="margin-bottom:0; flex:1; min-width:0;" />
+      <button onclick="setDoseAmount(250)" style="
+        flex-shrink:0; padding:0 12px;
+        border-radius:8px;
+        border:1px solid ${currentDoseAmount===250?'#000':'var(--border)'};
+        background:${currentDoseAmount===250?'#000':'transparent'};
+        color:${currentDoseAmount===250?'#fff':'var(--text-muted)'};
+        font-size:12px; font-family:inherit; cursor:pointer;
+        font-weight:${currentDoseAmount===250?'600':'400'};
+        white-space:nowrap;">250</button>
+      <button onclick="setDoseAmount(500)" style="
+        flex-shrink:0; padding:0 12px;
+        border-radius:8px;
+        border:1px solid ${currentDoseAmount===500?'#000':'var(--border)'};
+        background:${currentDoseAmount===500?'#000':'transparent'};
+        color:${currentDoseAmount===500?'#fff':'var(--text-muted)'};
+        font-size:12px; font-family:inherit; cursor:pointer;
+        font-weight:${currentDoseAmount===500?'600':'400'};
+        white-space:nowrap;">500</button>
     </div>
 
     <span class="label">Symptoms — tap to score</span>
