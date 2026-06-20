@@ -351,27 +351,22 @@
     }
     .delta.up { color: #fff; }
     .delta.down { color: var(--text-muted); }
-    .bar-chart {
-      display: flex;
-      align-items: flex-end;
-      gap: 3px;
-      height: 40px;
+    .line-chart-wrap {
+      width: 100%;
       margin-bottom: 4px;
     }
-    .bar {
-      flex: 1;
-      border-radius: 2px 2px 0 0;
-      min-height: 3px;
-      transition: height 0.3s;
+    .line-chart-wrap svg {
+      width: 100%;
+      height: 70px;
+      overflow: visible;
     }
-    .bar.current { background: #000; }
-    .bar.past { background: #ccc; }
-    .bar-labels {
+    .chart-labels {
       display: flex;
       justify-content: space-between;
       font-size: 9px;
       color: var(--text-dim);
       letter-spacing: 0.5px;
+      margin-top: 2px;
     }
 
     /* SUMMARY CARD */
@@ -552,13 +547,6 @@ function renderLog() {
         <span class="label">Date</span>
         <input class="date-input" type="date" value="${selectedDate}" onchange="changeDate(this.value)" style="margin-bottom:0;" />
       </div>
-      <div style="flex-shrink:0; min-width:70px;">
-        <span class="label">Dose</span>
-        <div class="dose-toggle ${currentDose ? 'active' : ''}" onclick="toggleDose()"
-          style="margin-bottom:0; height:43px; display:flex; align-items:center; justify-content:center;">
-          <div class="check-circle ${currentDose ? 'checked' : ''}">${currentDose ? '✓' : ''}</div>
-        </div>
-      </div>
     </div>
 
     <span class="label">Dose Amount</span>
@@ -652,6 +640,51 @@ function renderHistory() {
   return html;
 }
 
+function makeSVGLine(data) {
+  const W = 300, H = 60, PAD = 6;
+  const n = data.length;
+  if (n === 0) return "";
+  if (n === 1) {
+    const cx = W / 2;
+    const cy = H - PAD - ((data[0] / 10) * (H - PAD * 2));
+    return `<svg viewBox="0 0 ${W} ${H}" preserveAspectRatio="none">
+      <circle cx="${cx}" cy="${cy}" r="3" fill="#000"/>
+      <text x="${cx}" y="${cy - 7}" text-anchor="middle" font-size="9" fill="#888">${data[0]}</text>
+    </svg>`;
+  }
+  const xs = data.map((_, i) => PAD + (i / (n - 1)) * (W - PAD * 2));
+  const ys = data.map(v => H - PAD - ((v / 10) * (H - PAD * 2)));
+
+  // smooth bezier path
+  let d = `M ${xs[0]} ${ys[0]}`;
+  for (let i = 1; i < n; i++) {
+    const cpx = (xs[i - 1] + xs[i]) / 2;
+    d += ` C ${cpx} ${ys[i-1]}, ${cpx} ${ys[i]}, ${xs[i]} ${ys[i]}`;
+  }
+
+  // fill path
+  let fill = d + ` L ${xs[n-1]} ${H} L ${xs[0]} ${H} Z`;
+
+  const dots = data.map((v, i) =>
+    `<circle cx="${xs[i]}" cy="${ys[i]}" r="2.5" fill="#000"/>
+     <text x="${xs[i]}" y="${ys[i] - 6}" text-anchor="middle" font-size="8" fill="#666">${v}</text>`
+  ).join("");
+
+  // y-axis grid lines at 2,4,6,8,10
+  const grid = [2,4,6,8,10].map(v => {
+    const gy = H - PAD - ((v / 10) * (H - PAD * 2));
+    return `<line x1="${PAD}" y1="${gy}" x2="${W - PAD}" y2="${gy}" stroke="#e8e8e8" stroke-width="0.5"/>
+            <text x="${PAD - 2}" y="${gy + 3}" text-anchor="end" font-size="7" fill="#ccc">${v}</text>`;
+  }).join("");
+
+  return `<svg viewBox="0 0 ${W} ${H}" preserveAspectRatio="none">
+    ${grid}
+    <path d="${fill}" fill="rgba(0,0,0,0.04)" stroke="none"/>
+    <path d="${d}" fill="none" stroke="#000" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+    ${dots}
+  </svg>`;
+}
+
 function renderProgress() {
   const weekData = weeklyAverages();
   const weeks = Object.keys(weekData).map(Number).sort((a,b) => a - b);
@@ -662,7 +695,7 @@ function renderProgress() {
 
   let html = "";
 
-  METRICS.forEach(({ id, label, icon, inverse }) => {
+  METRICS.forEach(({ id, label, icon }) => {
     const data = weeks.map(w => {
       const t = weekData[w]?.totals?.[id] || 0;
       const c = weekData[w]?.counts?.[id] || 1;
@@ -688,15 +721,10 @@ function renderProgress() {
             ? `<span class="delta ${improved ? 'up' : 'down'}">${improved ? '▲' : '▼'} ${Math.abs(delta)}</span>`
             : ""}
         </div>
-        <div class="bar-chart">
-          ${data.map((v, i) => {
-            const h = Math.max(3, Math.round((v / 10) * 40));
-            const isCurrent = i === data.length - 1;
-            return `<div class="bar ${isCurrent ? 'current' : 'past'}" style="height:${h}px"></div>`;
-          }).join("")}
-        </div>
-        <div class="bar-labels">
+        <div class="line-chart-wrap">${makeSVGLine(data)}</div>
+        <div class="chart-labels">
           <span>Wk ${weeks[0]}</span>
+          ${weeks.length > 2 ? `<span>Wk ${weeks[Math.floor(weeks.length/2)]}</span>` : ""}
           <span>Wk ${weeks[weeks.length - 1]}</span>
         </div>
       </div>
@@ -704,8 +732,7 @@ function renderProgress() {
   });
 
   const dates = allDates();
-  const dosed = dates.filter(d => entries[d]?.doseLogged).length;
-  const adherence = dates.length ? Math.round((dosed / dates.length) * 100) : 0;
+  const adherence = dates.length ? Math.round((dates.filter(d => entries[d]?.doseLogged).length / dates.length) * 100) : 0;
 
   html += `
     <div class="summary-card">
