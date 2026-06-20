@@ -13,14 +13,14 @@
     * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
 
     :root {
-      --bg: #000;
-      --surface: #111;
-      --border: #222;
-      --border-light: #1a1a1a;
-      --text: #fff;
-      --text-muted: #666;
-      --text-dim: #333;
-      --accent: #fff;
+      --bg: #fff;
+      --surface: #f5f5f5;
+      --border: #e0e0e0;
+      --border-light: #ebebeb;
+      --text: #000;
+      --text-muted: #888;
+      --text-dim: #bbb;
+      --accent: #000;
       --safe-top: env(safe-area-inset-top, 0px);
       --safe-bottom: env(safe-area-inset-bottom, 0px);
     }
@@ -104,6 +104,7 @@
       overflow-y: auto;
       -webkit-overflow-scrolling: touch;
       padding: 20px 20px calc(var(--safe-bottom) + 20px);
+      overflow-x: hidden;
     }
 
     /* LABEL */
@@ -119,6 +120,8 @@
     /* DATE INPUT */
     .date-input {
       width: 100%;
+      max-width: 100%;
+      box-sizing: border-box;
       background: var(--surface);
       border: 1px solid var(--border);
       border-radius: 8px;
@@ -127,6 +130,7 @@
       font-size: 14px;
       font-family: inherit;
       margin-bottom: 20px;
+      display: block;
     }
     .date-input:focus { outline: none; border-color: #444; }
 
@@ -155,9 +159,9 @@
       flex-shrink: 0;
     }
     .check-circle.checked {
-      background: var(--text);
-      border-color: var(--text);
-      color: var(--bg);
+      background: #000;
+      border-color: #000;
+      color: #fff;
     }
 
     /* METRIC ROW */
@@ -223,9 +227,9 @@
       display: flex; align-items: center; justify-content: center;
     }
     .score-btn.selected {
-      background: var(--text);
-      border-color: var(--text);
-      color: var(--bg);
+      background: #000;
+      border-color: #000;
+      color: #fff;
       font-weight: 600;
     }
     .score-hint {
@@ -256,10 +260,10 @@
     .save-btn {
       width: 100%;
       padding: 15px;
-      background: var(--text);
+      background: #000;
       border: none;
       border-radius: 8px;
-      color: var(--bg);
+      color: #fff;
       font-size: 13px;
       letter-spacing: 2px;
       text-transform: uppercase;
@@ -360,8 +364,8 @@
       min-height: 3px;
       transition: height 0.3s;
     }
-    .bar.current { background: #fff; }
-    .bar.past { background: #333; }
+    .bar.current { background: #000; }
+    .bar.past { background: #ccc; }
     .bar-labels {
       display: flex;
       justify-content: space-between;
@@ -407,7 +411,7 @@
         <h1>BPC‑157 Journal</h1>
         <div class="header-sub" id="header-sub">Loading...</div>
       </div>
-      <div class="dose-pill">💉 250mcg</div>
+      <div class="dose-pill" id="dose-pill">💉 <span id="pill-amount">250</span>mcg</div>
     </div>
   </div>
 
@@ -430,7 +434,7 @@ const METRICS = [
   { id: "dryEye",      label: "Dry Eye",        icon: "👁️", inverse: true  },
   { id: "dryMouth",    label: "Dry Mouth",      icon: "💧", inverse: true  },
   { id: "sleep",       label: "Sleep Quality",  icon: "🌙", inverse: false },
-  { id: "inflammation",label: "Inflammation",   icon: "🔥", inverse: true  },
+
   { id: "mood",        label: "Mood",           icon: "☀️", inverse: false },
 ];
 
@@ -445,6 +449,7 @@ let openMetric = null;
 let currentScores = {};
 let currentNotes = "";
 let currentDose = false;
+let currentDoseAmount = 250;
 let savedFlash = false;
 
 function todayStr() {
@@ -479,6 +484,7 @@ function loadEntry(d) {
   currentScores = Object.assign({}, e.scores || {});
   currentNotes = e.notes || "";
   currentDose = e.doseLogged || false;
+  currentDoseAmount = e.doseAmount || 250;
 }
 
 function setView(v) {
@@ -541,12 +547,24 @@ function render() {
 
 function renderLog() {
   let html = `
-    <span class="label">Date</span>
-    <input class="date-input" type="date" value="${selectedDate}" onchange="changeDate(this.value)" />
+    <div style="display:flex; gap:10px; align-items:stretch; margin-bottom:20px;">
+      <div style="flex:1;">
+        <span class="label">Date</span>
+        <input class="date-input" type="date" value="${selectedDate}" onchange="changeDate(this.value)" style="margin-bottom:0;" />
+      </div>
+      <div style="flex-shrink:0; min-width:70px;">
+        <span class="label">Dose</span>
+        <div class="dose-toggle ${currentDose ? 'active' : ''}" onclick="toggleDose()"
+          style="margin-bottom:0; height:43px; display:flex; align-items:center; justify-content:center;">
+          <div class="check-circle ${currentDose ? 'checked' : ''}">${currentDose ? '✓' : ''}</div>
+        </div>
+      </div>
+    </div>
 
-    <div class="dose-toggle ${currentDose ? 'active' : ''}" onclick="toggleDose()">
-      <span class="dose-toggle-label">💉 Dose taken today</span>
-      <div class="check-circle ${currentDose ? 'checked' : ''}">${currentDose ? '✓' : ''}</div>
+    <span class="label">Dose Amount</span>
+    <div style="display:flex; gap:8px; margin-bottom:20px;">
+      <button onclick="setDoseAmount(250)" style="flex:1;padding:11px 8px;border-radius:8px;border:1px solid ${currentDoseAmount===250?'#000':'var(--border)'};background:${currentDoseAmount===250?'#000':'transparent'};color:${currentDoseAmount===250?'#fff':'var(--text-muted)'};font-size:13px;font-family:inherit;cursor:pointer;font-weight:${currentDoseAmount===250?'600':'400'};">250mcg</button>
+      <button onclick="setDoseAmount(500)" style="flex:1;padding:11px 8px;border-radius:8px;border:1px solid ${currentDoseAmount===500?'#000':'var(--border)'};background:${currentDoseAmount===500?'#000':'transparent'};color:${currentDoseAmount===500?'#fff':'var(--text-muted)'};font-size:13px;font-family:inherit;cursor:pointer;font-weight:${currentDoseAmount===500?'600':'400'};">500mcg</button>
     </div>
 
     <span class="label">Symptoms — tap to score</span>
@@ -706,6 +724,13 @@ function renderProgress() {
 
 // ---- ACTIONS ----
 
+function setDoseAmount(amt) {
+  currentDoseAmount = amt;
+  const pill = document.getElementById("pill-amount");
+  if (pill) pill.textContent = amt;
+  render();
+}
+
 function changeDate(d) {
   selectedDate = d;
   openMetric = null;
@@ -745,6 +770,7 @@ function saveEntry() {
     scores: Object.assign({}, currentScores),
     notes: currentNotes,
     doseLogged: currentDose,
+    doseAmount: currentDoseAmount,
   };
   saveStorage();
   savedFlash = true;
